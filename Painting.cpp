@@ -4,19 +4,20 @@
 #include "stdafx.h"
 #include "Painting.h"
 
-#include <windows.h>
-#include <CommCtrl.h>
-
-#pragma comment(lib, "ComCtl32.lib")
-
 #define MAX_LOADSTRING 100
+
+#define CM_TOOLS_PENCIL 1001
+#define CM_TOOLS_LINE 1002
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
-HWND hwndA;
+int prevX, prevY, pointX, pointY;
+bool isClicked, isPencil, isLine;
+HDC tempHdc;
+HBITMAP hBitmap;
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -34,7 +35,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
  	// TODO: Place code here.
 	MSG msg;
-	HACCEL hAccelTable; 
+	HACCEL hAccelTable;
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -48,19 +49,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PAINTING));
-
-	//menu begin
-	HWND hStatusWindow = CreateStatusWindow (WS_CHILD | WS_VISIBLE, L"", hwndA, 5000); 
- 
-    HMENU hmenu1;
-    hmenu1 = CreateMenu();
- 
-    AppendMenu(hmenu1, MF_STRING, 0, L"&File"); 
-    AppendMenu(hmenu1, MF_STRING, 0, L"&Edit"); 
-    AppendMenu(hmenu1, MF_STRING, 0, L"&Help"); 
- 
-    SetMenu(hwndA, hmenu1);
-	//menu end
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -111,6 +99,42 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
+void czCreateMenu(HWND hwnd)
+{
+            HMENU MainMenu = CreateMenu();
+            HMENU hPopupMenu = CreatePopupMenu();
+ 
+            AppendMenu(MainMenu, MF_STRING | MF_POPUP, (UINT)hPopupMenu, L"&Инструменты"); 
+            {
+                AppendMenu(hPopupMenu, MF_STRING, CM_TOOLS_PENCIL, L"Карандаш");
+                AppendMenu(hPopupMenu, MF_STRING, CM_TOOLS_LINE, L"Прямая");
+                AppendMenu(hPopupMenu, MF_STRING, 1000, L"Сохранить как...");
+                AppendMenu(hPopupMenu, MF_STRING, 1000, L"Авторизация");
+                AppendMenu(hPopupMenu, MF_STRING | MF_CHECKED, 1000, L"Печать");
+                AppendMenu(hPopupMenu, MF_STRING, 1000, L"Выход");
+            }
+ 
+            AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&Правка");  
+            AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&Окна");    
+            AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&Настройки");
+            AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&?");   
+ 
+            
+            
+            SetMenu(hwnd, MainMenu);
+			//------------
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+
+			HDC hdc = GetDC(hwnd);
+
+			tempHdc = CreateCompatibleDC(hdc);
+			hBitmap = CreateCompatibleBitmap(tempHdc, rc.right - rc.left, rc.bottom);
+			SelectObject(tempHdc, hBitmap);
+
+			InvertRect(tempHdc, &rc);
+}
+
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
 //
@@ -135,11 +159,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   czCreateMenu(hWnd);
+
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
-
-   //assigning global HWND hwndA
-   hwndA = hWnd;
 
    return TRUE;
 }
@@ -160,6 +183,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	HDC hdc;
 
+	int x, y;
+
 	switch (message)
 	{
 	case WM_COMMAND:
@@ -174,9 +199,69 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
+		case CM_TOOLS_PENCIL:
+			isPencil = true;
+			isLine = false;
+			break;
+		case CM_TOOLS_LINE:
+			isLine = true;
+			isPencil = false;
+			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
+		break;
+	case WM_MOUSEMOVE:
+		hdc = GetDC(hWnd);
+		x = LOWORD(lParam);
+		y = HIWORD(lParam);
+		if (isPencil && isClicked)
+		{
+			MoveToEx(hdc, prevX, prevY, 0);
+			LineTo(hdc, x, y);
+			prevX = x;
+			prevY = y;
+		}
+		if (isLine && isClicked)
+		{
+		    RECT rc;
+			GetClientRect(hWnd, &rc);
+			
+			BitBlt(hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom, tempHdc, rc.left, rc.top, SRCCOPY);			
+
+			MoveToEx(hdc, pointX, pointY, 0);	
+			LineTo(hdc, x, y);
+
+		}
+		break;
+	case WM_LBUTTONDOWN:
+		hdc = GetDC(hWnd);
+		isClicked = true;
+		if (isPencil)
+		{
+			prevX = LOWORD(lParam);
+			prevY = HIWORD(lParam);
+		}
+		if (isLine)
+		{
+			pointX = LOWORD(lParam);
+			pointY = HIWORD(lParam);
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			/*tempHdc = CreateCompatibleDC(hdc);
+			hBitmap = CreateCompatibleBitmap(tempHdc, rc.right - rc.left, rc.bottom);
+			hDefaultBitmap = (HBITMAP) SelectObject(tempHdc, hBitmap);
+
+			InvertRect(tempHdc, &rc);*/
+			
+		}		
+		break;
+	case WM_LBUTTONUP:
+		hdc = GetDC(hWnd);
+		isClicked = false;
+		RECT rc;
+	    GetClientRect(hWnd, &rc);
+		BitBlt(tempHdc, rc.left, rc.top, rc.right - rc.left, rc.bottom, hdc, rc.left, rc.top, SRCCOPY);
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
@@ -212,20 +297,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-void czCreateMenu(HWND hwnd)
-{
-	HMENU MainMenu = CreateMenu();
-    HMENU hPopupMenu = CreatePopupMenu();
- 
-    AppendMenu(MainMenu, MF_STRING | MF_POPUP, (UINT)hPopupMenu, L"&Tools"); 
-    {
-		AppendMenu(hPopupMenu, MF_STRING, 1000, L"Pencil");
-        AppendMenu(hPopupMenu, MF_STRING, 1000, L"Straight line");
-    }
- 
-    AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&File");     
-    //AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&Настройки");
-    AppendMenu(MainMenu, MF_STRING | MF_POPUP, 0, L"&?");   
-             
-    SetMenu(hwnd, MainMenu);
-}
+

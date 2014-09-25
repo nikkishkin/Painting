@@ -1,7 +1,7 @@
-﻿Build started 12.09.2014 8:51:43.
+﻿Build started 24.09.2014 15:40:45.
      1>Project "G:\XIS\5 sem\ОСиСП\OSiSP_labs\Painting\Painting\Painting.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
-         Touching "Debug\Painting.unsuccessfulbuild".
+         Creating "Debug\Painting.unsuccessfulbuild" because "AlwaysCreate" was specified.
        ClCompile:
          All outputs are up-to-date.
          C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"StdAfx.h" /Fp"Debug\Painting.pch" /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt Painting.cpp
@@ -13,9 +13,14 @@
          Debug\Painting.obj
          Debug\stdafx.obj
      1>Painting.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/INCREMENTAL:NO' specification
-     1>LINK : fatal error LNK1123: failure during conversion to COFF: file invalid or corrupt
-     1>Done Building Project "G:\XIS\5 sem\ОСиСП\OSiSP_labs\Painting\Painting\Painting.vcxproj" (build target(s)) -- FAILED.
+         Painting.vcxproj -> G:\XIS\5 sem\ОСиСП\OSiSP_labs\Painting\Debug\Painting.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"G:\XIS\5 sem\ОСиСП\OSiSP_labs\Painting\Debug\Painting.exe;#1" /manifest Debug\Painting.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\Painting.unsuccessfulbuild".
+         Touching "Debug\Painting.lastbuildstate".
+     1>Done Building Project "G:\XIS\5 sem\ОСиСП\OSiSP_labs\Painting\Painting\Painting.vcxproj" (build target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:04.21
+Time Elapsed 00:00:01.63
